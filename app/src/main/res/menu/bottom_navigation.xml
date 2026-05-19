@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 动态生成，这里放占位 -->
+    <item
+        android:id="@+id/tab_0"
+        android:title="Tab 1"
+        android:icon="@android:drawable/ic_menu_compass" />
+    <item
+        android:id="@+id/tab_1"
+        android:title="Tab 2"
+        android:icon="@android:drawable/ic_menu_recent_history" />
+    <item
+        android:id="@+id/tab_2"
+        android:title="Tab 3"
+        android:icon="@android:drawable/ic_menu_info_details" />
+    <item
+        android:id="@+id/tab_3"
+        android:title="Tab 4"
+        android:icon="@android:drawable/ic_menu_manage" />
+</menu>

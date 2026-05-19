@@ -1,0 +1,25 @@
+{
+  "appName": "MIMO",
+  "tabs": [
+    {
+      "label": "主页",
+      "icon": "🏠",
+      "url": "https://aistudio.xiaomimimo.com/#/c"
+    },
+    {
+      "label": "龙虾",
+      "icon": "🦞",
+      "url": "https://aistudio.xiaomimimo.com/#/"
+    },
+    {
+      "label": "API用量",
+      "icon": "📊",
+      "url": "https://platform.xiaomimimo.com/console/usage"
+    },
+    {
+      "label": "订阅",
+      "icon": "💳",
+      "url": "https://platform.xiaomimimo.com/console/plan-manage"
+    }
+  ]
+}
