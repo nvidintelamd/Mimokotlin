@@ -20,7 +20,6 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class WebViewFragment : Fragment() {
 
@@ -34,7 +33,7 @@ class WebViewFragment : Fragment() {
 
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
-    private var swipeRefresh: SwipeRefreshLayout? = null
+    private var swipeRefresh: TopSwipeRefreshLayout? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
 
     // 现代文件选择器
@@ -70,6 +69,8 @@ class WebViewFragment : Fragment() {
         swipeRefresh?.setOnRefreshListener {
             webView?.reload()
         }
+        // 设置 WebView 引用，用于判断是否在顶部
+        webView?.let { swipeRefresh?.setWebView(it) }
     }
 
     @Suppress("SetJavaScriptEnabled")
