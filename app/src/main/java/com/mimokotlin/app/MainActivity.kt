@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupViewPager() {
         viewPager.adapter = TabAdapter(this, config.tabs)
         viewPager.offscreenPageLimit = config.tabs.size - 1
+        viewPager.isUserInputEnabled = false  // 禁用左右滑动
 
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {

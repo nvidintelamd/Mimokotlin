@@ -20,6 +20,7 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class WebViewFragment : Fragment() {
 
@@ -33,6 +34,7 @@ class WebViewFragment : Fragment() {
 
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
+    private var swipeRefresh: SwipeRefreshLayout? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
 
     // 现代文件选择器
@@ -57,9 +59,17 @@ class WebViewFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         webView = view.findViewById(R.id.webView)
         progressBar = view.findViewById(R.id.progressBar)
+        swipeRefresh = view.findViewById(R.id.swipeRefresh)
+        setupSwipeRefresh()
         setupWebView()
         val url = arguments?.getString(ARG_URL) ?: "about:blank"
         webView?.loadUrl(url)
+    }
+
+    private fun setupSwipeRefresh() {
+        swipeRefresh?.setOnRefreshListener {
+            webView?.reload()
+        }
     }
 
     @Suppress("SetJavaScriptEnabled")
@@ -94,6 +104,11 @@ class WebViewFragment : Fragment() {
             ): Boolean {
                 // 所有链接都在 WebView 内打开
                 return false
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                super.onPageFinished(view, url)
+                swipeRefresh?.isRefreshing = false
             }
         }
 
