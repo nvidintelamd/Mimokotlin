@@ -115,13 +115,8 @@ class WebViewFragment : Fragment() {
                 fileUploadCallback?.onReceiveValue(null)
                 fileUploadCallback = filePathCallback
 
-                val acceptTypes = fileChooserParams.acceptTypes
-                val mimeFilter = if (acceptTypes.isNotEmpty() && acceptTypes[0].isNotBlank()) {
-                    acceptTypes[0]
-                } else {
-                    "*/*"
-                }
-                fileChooserLauncher.launch(mimeFilter)
+                // 允许选择任意类型的文件
+                fileChooserLauncher.launch("*/*")
                 return true
             }
         }
