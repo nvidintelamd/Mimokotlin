@@ -1,10 +1,7 @@
 package com.mimokotlin.app
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -18,11 +15,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewPager: ViewPager2
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var config: AppConfig
-    
-    // 双击检测
-    private var lastTapTime: Long = 0
-    private var lastTapIndex: Int = -1
-    private val doubleTapTimeout = 300L // 毫秒
+
+    // 存储 Fragment 引用
+    private val fragmentMap = mutableMapOf<Int, WebViewFragment>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,29 +59,12 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // 双击刷新当前页面
+        // 再次点击已选中的标签页 = 刷新
         bottomNav.setOnItemReselectedListener { item ->
-            val currentTime = System.currentTimeMillis()
-            val tapIndex = item.itemId
-            
-            if (tapIndex == lastTapIndex && (currentTime - lastTapTime) < doubleTapTimeout) {
-                // 双击触发刷新
-                refreshCurrentTab()
-                lastTapTime = 0
-                lastTapIndex = -1
-            } else {
-                // 单击已选中的标签页，滚动到顶部
-                lastTapTime = currentTime
-                lastTapIndex = tapIndex
-            }
+            val fragment = fragmentMap[item.itemId]
+            fragment?.reload()
+            Toast.makeText(this, "刷新中...", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun refreshCurrentTab() {
-        val fragments = supportFragmentManager.fragments
-        val currentFragment = fragments.find { it.isVisible } as? WebViewFragment
-        currentFragment?.reload()
-        Toast.makeText(this, "刷新中...", Toast.LENGTH_SHORT).show()
     }
 
     private fun setupViewPager() {
@@ -103,8 +81,7 @@ class MainActivity : AppCompatActivity() {
 
     @Deprecated("Use OnBackPressedCallback")
     override fun onBackPressed() {
-        val fragments = supportFragmentManager.fragments
-        val currentFragment = fragments.find { it.isVisible } as? WebViewFragment
+        val currentFragment = fragmentMap[viewPager.currentItem]
 
         if (currentFragment?.canGoBack() == true) {
             currentFragment.goBack()
@@ -116,12 +93,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private class TabAdapter(
+    private inner class TabAdapter(
         activity: FragmentActivity,
         private val tabs: List<TabConfig>
     ) : FragmentStateAdapter(activity) {
         override fun getItemCount() = tabs.size
-        override fun createFragment(position: Int): Fragment =
-            WebViewFragment.newInstance(tabs[position].url)
+        override fun createFragment(position: Int): Fragment {
+            val fragment = WebViewFragment.newInstance(tabs[position].url)
+            fragmentMap[position] = fragment
+            return fragment
+        }
     }
 }
