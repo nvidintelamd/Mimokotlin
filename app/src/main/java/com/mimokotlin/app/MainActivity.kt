@@ -1,10 +1,12 @@
 package com.mimokotlin.app
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -16,6 +18,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewPager: ViewPager2
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var config: AppConfig
+    
+    // 双击检测
+    private var lastTapTime: Long = 0
+    private var lastTapIndex: Int = -1
+    private val doubleTapTimeout = 300L // 毫秒
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,11 +58,35 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 图标着色
+        // 单击切换标签页
         bottomNav.setOnItemSelectedListener { item ->
             viewPager.currentItem = item.itemId
             true
         }
+
+        // 双击刷新当前页面
+        bottomNav.setOnItemReselectedListener { item ->
+            val currentTime = System.currentTimeMillis()
+            val tapIndex = item.itemId
+            
+            if (tapIndex == lastTapIndex && (currentTime - lastTapTime) < doubleTapTimeout) {
+                // 双击触发刷新
+                refreshCurrentTab()
+                lastTapTime = 0
+                lastTapIndex = -1
+            } else {
+                // 单击已选中的标签页，滚动到顶部
+                lastTapTime = currentTime
+                lastTapIndex = tapIndex
+            }
+        }
+    }
+
+    private fun refreshCurrentTab() {
+        val fragments = supportFragmentManager.fragments
+        val currentFragment = fragments.find { it.isVisible } as? WebViewFragment
+        currentFragment?.reload()
+        Toast.makeText(this, "刷新中...", Toast.LENGTH_SHORT).show()
     }
 
     private fun setupViewPager() {

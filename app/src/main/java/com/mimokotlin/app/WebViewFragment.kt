@@ -33,7 +33,6 @@ class WebViewFragment : Fragment() {
 
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
-    private var swipeRefresh: TopSwipeRefreshLayout? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
 
     // 现代文件选择器
@@ -58,19 +57,9 @@ class WebViewFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         webView = view.findViewById(R.id.webView)
         progressBar = view.findViewById(R.id.progressBar)
-        swipeRefresh = view.findViewById(R.id.swipeRefresh)
-        setupSwipeRefresh()
         setupWebView()
         val url = arguments?.getString(ARG_URL) ?: "about:blank"
         webView?.loadUrl(url)
-    }
-
-    private fun setupSwipeRefresh() {
-        swipeRefresh?.setOnRefreshListener {
-            webView?.reload()
-        }
-        // 设置 WebView 引用，用于判断是否在顶部
-        webView?.let { swipeRefresh?.setWebView(it) }
     }
 
     @Suppress("SetJavaScriptEnabled")
@@ -105,11 +94,6 @@ class WebViewFragment : Fragment() {
             ): Boolean {
                 // 所有链接都在 WebView 内打开
                 return false
-            }
-
-            override fun onPageFinished(view: WebView, url: String?) {
-                super.onPageFinished(view, url)
-                swipeRefresh?.isRefreshing = false
             }
         }
 
@@ -173,6 +157,10 @@ class WebViewFragment : Fragment() {
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "下载失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun reload() {
+        webView?.reload()
     }
 
     fun canGoBack(): Boolean = webView?.canGoBack() == true
