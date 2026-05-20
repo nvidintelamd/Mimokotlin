@@ -17,7 +17,9 @@ class TopSwipeRefreshLayout @JvmOverloads constructor(
     }
 
     override fun canChildScrollUp(): Boolean {
-        // 只有当 WebView 不能继续向上滚动时（即已经在顶部），才允许下拉刷新
-        return webView?.canScrollVertically(-1) ?: super.canChildScrollUp()
+        val wv = webView ?: return super.canChildScrollUp()
+        // 使用 scrollY 判断，更可靠
+        // scrollY > 0 表示页面已经滚动了一段距离，不在顶部
+        return wv.scrollY > 0
     }
 }
