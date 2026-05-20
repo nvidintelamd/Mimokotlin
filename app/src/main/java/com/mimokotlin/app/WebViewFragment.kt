@@ -83,7 +83,7 @@ class WebViewFragment : Fragment() {
             databaseEnabled = true
             allowFileAccess = true
             allowContentAccess = true
-            cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+            cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             useWideViewPort = true
             loadWithOverviewMode = true
@@ -110,8 +110,6 @@ class WebViewFragment : Fragment() {
             override fun onPageFinished(view: WebView, url: String?) {
                 super.onPageFinished(view, url)
                 swipeRefresh?.isRefreshing = false
-                // 注入 CSS 隐藏广告横幅
-                injectAdBlockCss(view)
             }
         }
 
@@ -148,71 +146,6 @@ class WebViewFragment : Fragment() {
         wv.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             handleDownload(url, userAgent, contentDisposition, mimeType)
         }
-    }
-
-    private fun injectAdBlockCss(webView: WebView) {
-        // 注入 JS 隐藏顶部广告横幅（如 "Mimo V2.5 正式上线" 等推广信息）
-        val js = """
-            (function() {
-                // 如果已经执行过，跳过
-                if (document.getElementById('mimo-adblock-style')) return;
-                
-                // 标记已执行
-                var marker = document.createElement('meta');
-                marker.id = 'mimo-adblock-style';
-                document.head.appendChild(marker);
-                
-                // 广告关键词
-                var adTexts = ['正式上线', 'V2.5', '新版本发布', '升级通知', '立即体验', '了解更多'];
-                
-                // 查找并隐藏包含广告文字的元素
-                function hideAds() {
-                    var allElements = document.querySelectorAll('div, section, header, aside, nav, p, span, a');
-                    allElements.forEach(function(el) {
-                        // 只处理直接文本内容（不检查子元素）
-                        var directText = Array.from(el.childNodes)
-                            .filter(function(n) { return n.nodeType === 3; })
-                            .map(function(n) { return n.textContent; })
-                            .join('');
-                        
-                        var fullText = el.textContent || '';
-                        var isAd = adTexts.some(function(adText) { 
-                            return fullText.includes(adText); 
-                        });
-                        
-                        if (isAd) {
-                            // 检查是否是顶部区域的横幅（高度适中，不是整个页面）
-                            var rect = el.getBoundingClientRect();
-                            if (rect.top < 150 && rect.height > 20 && rect.height < 300) {
-                                el.style.display = 'none';
-                                el.style.visibility = 'hidden';
-                                el.style.height = '0';
-                                el.style.overflow = 'hidden';
-                                el.style.margin = '0';
-                                el.style.padding = '0';
-                            }
-                        }
-                    });
-                }
-                
-                // 立即执行一次
-                hideAds();
-                
-                // 监听 DOM 变化，处理动态加载的内容
-                var observer = new MutationObserver(function(mutations) {
-                    hideAds();
-                });
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-                
-                // 延迟再执行一次（等待异步加载的内容）
-                setTimeout(hideAds, 1000);
-                setTimeout(hideAds, 3000);
-            })();
-        """.trimIndent()
-        webView.evaluateJavascript(js, null)
     }
 
     private fun handleDownload(
