@@ -97,6 +97,7 @@ class WebViewFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                CookieManager.getInstance().flush()
                 if (!hasNotifiedLoad) {
                     hasNotifiedLoad = true
                     onPageLoadedCallback?.invoke()
@@ -162,7 +163,12 @@ class WebViewFragment : Fragment() {
 
     fun reload() {
         hasNotifiedLoad = false
-        webView?.reload()
+        val url = arguments?.getString(ARG_URL)
+        if (url != null) {
+            webView?.loadUrl(url)
+        } else {
+            webView?.reload()
+        }
     }
 
     fun canGoBack(): Boolean = webView?.canGoBack() == true
