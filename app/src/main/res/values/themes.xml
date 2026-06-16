@@ -3,4 +3,9 @@
     <style name="Theme.Mimokotlin" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="android:navigationBarColor">@color/white</item>
     </style>
+
+    <style name="Theme.Mimokotlin.Splash" parent="Theme.Mimokotlin">
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
 </resources>

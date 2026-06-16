@@ -16,7 +16,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var config: AppConfig
 
-    // 存储 Fragment 引用
     private val fragmentMap = mutableMapOf<Int, WebViewFragment>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,8 +23,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         config = AppConfig.load(this)
-
-        // 设置标题
         supportActionBar?.title = config.appName
 
         viewPager = findViewById(R.id.viewPager)
@@ -36,7 +33,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNav() {
-        // 动态构建菜单
         val menu = bottomNav.menu
         menu.clear()
 
@@ -53,13 +49,23 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 单击切换标签页
+        var previousTab = 0
+
         bottomNav.setOnItemSelectedListener { item ->
-            viewPager.currentItem = item.itemId
+            val targetPos = item.itemId
+            val currentPos = viewPager.currentItem
+
+            if (targetPos == currentPos) {
+                val fragment = fragmentMap[targetPos]
+                fragment?.reload()
+                Toast.makeText(this, "刷新中...", Toast.LENGTH_SHORT).show()
+            } else {
+                viewPager.currentItem = targetPos
+            }
+            previousTab = targetPos
             true
         }
 
-        // 再次点击已选中的标签页 = 刷新
         bottomNav.setOnItemReselectedListener { item ->
             val fragment = fragmentMap[item.itemId]
             fragment?.reload()
@@ -70,7 +76,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupViewPager() {
         viewPager.adapter = TabAdapter(this, config.tabs)
         viewPager.offscreenPageLimit = config.tabs.size - 1
-        viewPager.isUserInputEnabled = false  // 禁用左右滑动
+        viewPager.isUserInputEnabled = false
 
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
@@ -79,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    @Deprecated("Use OnBackPressedCallback")
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         val currentFragment = fragmentMap[viewPager.currentItem]
 
@@ -88,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         } else if (viewPager.currentItem > 0) {
             viewPager.currentItem = viewPager.currentItem - 1
         } else {
-            @Suppress("DEPRECATION")
             super.onBackPressed()
         }
     }

@@ -34,8 +34,9 @@ class WebViewFragment : Fragment() {
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private var onPageLoadedCallback: (() -> Unit)? = null
+    private var hasNotifiedLoad = false
 
-    // 现代文件选择器
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
     ) { uris ->
@@ -82,7 +83,6 @@ class WebViewFragment : Fragment() {
             mediaPlaybackRequiresUserGesture = false
         }
 
-        // Cookie
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(wv, true)
@@ -92,8 +92,15 @@ class WebViewFragment : Fragment() {
             override fun shouldOverrideUrlLoading(
                 view: WebView, request: WebResourceRequest
             ): Boolean {
-                // 所有链接都在 WebView 内打开
                 return false
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                if (!hasNotifiedLoad) {
+                    hasNotifiedLoad = true
+                    onPageLoadedCallback?.invoke()
+                }
             }
         }
 
@@ -105,26 +112,25 @@ class WebViewFragment : Fragment() {
                 }
             }
 
-            // 文件上传
             override fun onShowFileChooser(
                 webView: WebView,
                 filePathCallback: ValueCallback<Array<Uri>>,
                 fileChooserParams: FileChooserParams
             ): Boolean {
-                // 取消之前的回调
                 fileUploadCallback?.onReceiveValue(null)
                 fileUploadCallback = filePathCallback
-
-                // 允许选择任意类型的文件
                 fileChooserLauncher.launch("*/*")
                 return true
             }
         }
 
-        // 文件下载
         wv.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             handleDownload(url, userAgent, contentDisposition, mimeType)
         }
+    }
+
+    fun setOnPageLoadedListener(callback: () -> Unit) {
+        onPageLoadedCallback = callback
     }
 
     private fun handleDownload(
@@ -155,6 +161,7 @@ class WebViewFragment : Fragment() {
     }
 
     fun reload() {
+        hasNotifiedLoad = false
         webView?.reload()
     }
 
