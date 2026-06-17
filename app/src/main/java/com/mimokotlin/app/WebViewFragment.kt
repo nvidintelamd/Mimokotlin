@@ -101,6 +101,7 @@ class WebViewFragment : Fragment() {
             override fun shouldOverrideUrlLoading(
                 view: WebView, request: WebResourceRequest
             ): Boolean {
+                if (!request.isForMainFrame) return false
                 val url = request.url.toString()
                 if (isExternalLink(url)) {
                     showExternalLinkDialog(url)
