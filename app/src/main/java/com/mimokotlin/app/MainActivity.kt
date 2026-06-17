@@ -54,20 +54,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        var previousTab = 0
-
         bottomNav.setOnItemSelectedListener { item ->
-            val targetPos = item.itemId
-            val currentPos = viewPager.currentItem
-
-            if (targetPos == currentPos) {
-                val fragment = fragmentMap[targetPos]
-                fragment?.reload()
-                Toast.makeText(this, "刷新中...", Toast.LENGTH_SHORT).show()
-            } else {
-                viewPager.currentItem = targetPos
-            }
-            previousTab = targetPos
+            viewPager.currentItem = item.itemId
             true
         }
 
