@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Mimokotlin"
+rootProject.name = "MIMO_APP_Kotlin"
 include(":app")

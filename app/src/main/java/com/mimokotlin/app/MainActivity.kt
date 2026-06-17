@@ -42,10 +42,10 @@ class MainActivity : AppCompatActivity() {
         menu.clear()
 
         val icons = intArrayOf(
-            android.R.drawable.ic_menu_compass,
-            android.R.drawable.ic_menu_recent_history,
-            android.R.drawable.ic_menu_info_details,
-            android.R.drawable.ic_menu_manage
+            R.drawable.ic_chat,
+            R.drawable.ic_claw,
+            R.drawable.ic_api_usage,
+            R.drawable.ic_token_plan
         )
 
         config.tabs.forEachIndexed { index, tab ->

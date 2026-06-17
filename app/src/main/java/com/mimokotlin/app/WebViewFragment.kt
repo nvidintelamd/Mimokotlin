@@ -145,12 +145,13 @@ class WebViewFragment : Fragment() {
         }
     }
 
+    private val internalDomains = listOf("xiaomimimo.com", "mi.com", "xiaomi.com")
+
     private fun isExternalLink(url: String): Boolean {
         if (baseUrl.isEmpty()) return false
         return try {
             val targetHost = URI(url).host?.lowercase() ?: return false
-            val baseHost = URI(baseUrl).host?.lowercase() ?: return false
-            targetHost != baseHost
+            internalDomains.none { targetHost.endsWith(it) }
         } catch (e: Exception) {
             false
         }
