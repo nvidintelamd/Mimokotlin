@@ -25,7 +25,6 @@ class MainActivity : AppCompatActivity() {
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
-            setAcceptThirdPartyCookies(null, true)
         }
 
         config = AppConfig.load(this)

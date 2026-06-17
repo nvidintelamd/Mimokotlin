@@ -5,9 +5,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import android.view.WindowManager
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ProgressBar
@@ -16,15 +17,10 @@ import androidx.appcompat.app.AppCompatActivity
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
 
-    private var startTime = 0L
     private var pageLoaded = false
     private var minTimePassed = false
+    private var navigated = false
     private val handler = Handler(Looper.getMainLooper())
-    private val minDelay = 1200L
-
-    private val finishRunnable = Runnable {
-        navigateToMain()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +30,9 @@ class SplashActivity : AppCompatActivity() {
         )
         setContentView(R.layout.activity_splash)
 
-        startTime = System.currentTimeMillis()
+        CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+        }
 
         val webView = findViewById<WebView>(R.id.splashWebView)
         val progressBar = findViewById<ProgressBar>(R.id.splashProgress)
@@ -42,12 +40,19 @@ class SplashActivity : AppCompatActivity() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+            databaseEnabled = true
+            cacheMode = WebSettings.LOAD_DEFAULT
+        }
+
+        CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+            webView?.let { setAcceptThirdPartyCookies(it, true) }
         }
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                CookieManager.getInstance().flush()
                 pageLoaded = true
                 checkAndFinish()
             }
@@ -64,21 +69,17 @@ class SplashActivity : AppCompatActivity() {
         handler.postDelayed({
             minTimePassed = true
             checkAndFinish()
-        }, minDelay)
+        }, 1200L)
     }
 
     private fun checkAndFinish() {
-        if (pageLoaded && minTimePassed) {
-            handler.removeCallbacks(finishRunnable)
-            navigateToMain()
+        if (pageLoaded && minTimePassed && !navigated) {
+            navigated = true
+            handler.removeCallbacksAndMessages(null)
+            startActivity(Intent(this, MainActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            finish()
         }
-    }
-
-    private fun navigateToMain() {
-        if (isFinishing) return
-        startActivity(Intent(this, MainActivity::class.java))
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        finish()
     }
 
     override fun onDestroy() {
