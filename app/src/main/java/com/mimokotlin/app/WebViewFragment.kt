@@ -113,6 +113,7 @@ class WebViewFragment : Fragment() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
+                injectHideButtons(view)
                 if (!hasNotifiedLoad) {
                     hasNotifiedLoad = true
                     onPageLoadedCallback?.invoke()
@@ -146,6 +147,17 @@ class WebViewFragment : Fragment() {
     }
 
     private val internalDomains = listOf("xiaomimimo.com", "mi.com", "xiaomi.com")
+
+    private fun injectHideButtons(view: WebView?) {
+        val js = """
+            (function() {
+                var style = document.createElement('style');
+                style.textContent = '[aria-label="聊天群"], [aria-label="订阅反馈群"] { display: none !important; }';
+                document.head.appendChild(style);
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(js, null)
+    }
 
     private fun isExternalLink(url: String): Boolean {
         if (baseUrl.isEmpty()) return false
