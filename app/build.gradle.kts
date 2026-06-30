@@ -64,5 +64,10 @@ dependencies {
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation("androidx.webkit:webkit:1.9.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    geckoviewImplementation("org.mozilla.geckoview:geckoview-arm64-v8a:131.0.2")
+}
+
+afterEvaluate {
+    dependencies {
+        add("geckoviewImplementation", "org.mozilla.geckoview:geckoview-arm64-v8a:131.0.2")
+    }
 }
