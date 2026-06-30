@@ -15,6 +15,16 @@ android {
         versionName = "1.0.0"
     }
 
+    flavorDimensions += "engine"
+    productFlavors {
+        create("standard") {
+            dimension = "engine"
+        }
+        create("geckoview") {
+            dimension = "engine"
+        }
+    }
+
     signingConfigs {
         create("release") {
             storeFile = file("release-key.jks")
@@ -54,4 +64,5 @@ dependencies {
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation("androidx.webkit:webkit:1.9.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    geckoviewImplementation("org.mozilla.geckoview:geckoview-arm64-v8a:131.0.2")
 }

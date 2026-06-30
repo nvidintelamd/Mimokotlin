@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var config: AppConfig
 
-    private val fragmentMap = mutableMapOf<Int, WebViewFragment>()
+    private val fragmentMap = mutableMapOf<Int, PlatformWebViewFragment>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
     ) : FragmentStateAdapter(activity) {
         override fun getItemCount() = tabs.size
         override fun createFragment(position: Int): Fragment {
-            val fragment = WebViewFragment.newInstance(tabs[position].url)
+            val fragment = PlatformWebViewFragment.newInstance(tabs[position].url)
             fragmentMap[position] = fragment
             return fragment
         }
