@@ -22,6 +22,7 @@ android {
         }
         create("geckoview") {
             dimension = "engine"
+            minSdk = 26
         }
     }
 
