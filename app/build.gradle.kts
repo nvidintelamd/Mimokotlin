@@ -68,6 +68,6 @@ dependencies {
 
 afterEvaluate {
     dependencies {
-        add("geckoviewImplementation", "org.mozilla.geckoview:geckoview-arm64-v8a:131.0.2")
+        add("geckoviewImplementation", "org.mozilla.geckoview:geckoview-arm64-v8a:131.0.20241011205646")
     }
 }
