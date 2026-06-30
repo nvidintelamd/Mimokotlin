@@ -17,10 +17,11 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import org.mozilla.geckoview.AllowOrDeny
+import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
-import org.mozilla.geckoview.PromptDelegate
 import java.net.URI
 
 class PlatformWebViewFragment : Fragment() {
@@ -47,9 +48,10 @@ class PlatformWebViewFragment : Fragment() {
     private var onPageLoadedCallback: (() -> Unit)? = null
     private var hasNotifiedLoad = false
     private var baseUrl: String = ""
+    private var canGoBackState = false
     private val handler = Handler(Looper.getMainLooper())
 
-    private var fileUploadPrompt: PromptDelegate.FilePrompt? = null
+    private var fileUploadPrompt: GeckoSession.PromptDelegate.FilePrompt? = null
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
@@ -81,47 +83,49 @@ class PlatformWebViewFragment : Fragment() {
 
     private fun setupGeckoView() {
         val gv = geckoView ?: return
-        val runtime = getGeckoRuntime(requireContext())
 
         val session = GeckoSession()
         geckoSession = session
 
-        session.promptDelegate = object : PromptDelegate() {
+        session.promptDelegate = object : GeckoSession.PromptDelegate() {
             override fun onFilePrompt(
                 session: GeckoSession,
-                prompt: PromptDelegate.FilePrompt
-            ) {
+                prompt: GeckoSession.PromptDelegate.FilePrompt
+            ): GeckoResult<PromptResponse>? {
                 fileUploadPrompt = prompt
                 handler.post {
                     fileChooserLauncher.launch("*/*")
                 }
+                return null
             }
         }
 
         session.navigationDelegate = object : GeckoSession.NavigationDelegate() {
             override fun onLoadRequest(
                 session: GeckoSession,
-                request: LoadRequest
-            ): NavigationDelegate.Response {
+                request: NavigationDelegate.LoadRequest
+            ): GeckoResult<AllowOrDeny>? {
                 val url = request.uri.toString()
                 if (isExternalLink(url)) {
                     handler.post { showExternalLinkDialog(url) }
-                    return NavigationDelegate.Response.DENY
+                    return GeckoResult.fromValue(AllowOrDeny.DENY)
                 }
-                return NavigationDelegate.Response.ALLOW
+                return null
+            }
+
+            override fun onCanGoBack(session: GeckoSession, canGoBack: Boolean) {
+                canGoBackState = canGoBack
             }
         }
 
-        session.contentDelegate = object : GeckoSession.ContentDelegate() {
+        session.progressDelegate = object : GeckoSession.ProgressDelegate() {
             override fun onPageStop(session: GeckoSession, success: Boolean) {
                 if (!hasNotifiedLoad) {
                     hasNotifiedLoad = true
                     handler.post { onPageLoadedCallback?.invoke() }
                 }
             }
-        }
 
-        session.progressDelegate = object : GeckoSession.ProgressDelegate() {
             override fun onProgressChange(session: GeckoSession, progress: Int) {
                 handler.post {
                     progressBar?.apply {
@@ -132,7 +136,7 @@ class PlatformWebViewFragment : Fragment() {
             }
         }
 
-        gv.setSession(session, runtime)
+        gv.setSession(session)
     }
 
     private val internalDomains = listOf("xiaomimimo.com", "mi.com", "xiaomi.com")
@@ -206,7 +210,7 @@ class PlatformWebViewFragment : Fragment() {
         }
     }
 
-    fun canGoBack(): Boolean = geckoSession?.canGoBack() == true
+    fun canGoBack(): Boolean = canGoBackState
 
     fun goBack() {
         geckoSession?.goBack()
@@ -214,11 +218,11 @@ class PlatformWebViewFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        geckoSession?.activate()
+        geckoSession?.setActive(true)
     }
 
     override fun onPause() {
-        geckoSession?.deactivate()
+        geckoSession?.setActive(false)
         super.onPause()
     }
 
