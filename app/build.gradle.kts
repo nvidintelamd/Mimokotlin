@@ -66,6 +66,22 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        // GeckoView 152 pulls in androidx.core 1.18+ / media3 1.10+ which require compileSdk 36.
+        // Force versions compatible with compileSdk 34 / AGP 8.2.2.
+        force("androidx.core:core:1.13.1")
+        force("androidx.core:core-ktx:1.13.1")
+        force("androidx.media3:media3-common:1.2.1")
+        force("androidx.media3:media3-database:1.2.1")
+        force("androidx.media3:media3-datasource:1.2.1")
+        force("androidx.media3:media3-decoder:1.2.1")
+        force("androidx.media3:media3-exoplayer:1.2.1")
+        force("androidx.media3:media3-exoplayer-hls:1.2.1")
+        force("androidx.media3:media3-extractor:1.2.1")
+    }
+}
+
 afterEvaluate {
     dependencies {
         add("geckoviewImplementation", "org.mozilla.geckoview:geckoview-arm64-v8a:152.0.20260629141727")
