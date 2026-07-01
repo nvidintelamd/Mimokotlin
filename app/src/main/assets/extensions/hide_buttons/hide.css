@@ -1,0 +1,4 @@
+[aria-label="聊天群"],
+[aria-label="订阅反馈群"] {
+    display: none !important;
+}

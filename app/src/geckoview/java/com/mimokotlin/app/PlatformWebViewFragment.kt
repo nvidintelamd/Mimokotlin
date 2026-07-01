@@ -22,6 +22,7 @@ import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
+import org.mozilla.geckoview.WebExtension
 import java.net.URI
 
 class PlatformWebViewFragment : Fragment() {
@@ -31,9 +32,19 @@ class PlatformWebViewFragment : Fragment() {
 
         private var geckoRuntime: GeckoRuntime? = null
 
+        private var hideButtonsExtension: WebExtension? = null
+
         fun getGeckoRuntime(context: Context): GeckoRuntime {
             return geckoRuntime ?: GeckoRuntime.create(context.applicationContext).also {
                 geckoRuntime = it
+                // Install hide-buttons extension at runtime level (before any session opens)
+                it.webExtensionController.ensureBuiltIn(
+                    "resource://android/assets/extensions/hide_buttons/",
+                    "hide_buttons@mimokotlin.app"
+                ).then({ ext ->
+                    hideButtonsExtension = ext
+                    GeckoResult.fromValue(ext)
+                }, { GeckoResult.fromValue(null as WebExtension?) })
             }
         }
 
@@ -83,15 +94,17 @@ class PlatformWebViewFragment : Fragment() {
 
     private fun setupGeckoView() {
         val gv = geckoView ?: return
+        val runtime = getGeckoRuntime(requireContext())
 
         val session = GeckoSession()
+        session.open(runtime)
         geckoSession = session
 
-        session.promptDelegate = object : GeckoSession.PromptDelegate() {
+        session.promptDelegate = object : GeckoSession.PromptDelegate {
             override fun onFilePrompt(
                 session: GeckoSession,
                 prompt: GeckoSession.PromptDelegate.FilePrompt
-            ): GeckoResult<PromptResponse>? {
+            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse>? {
                 fileUploadPrompt = prompt
                 handler.post {
                     fileChooserLauncher.launch("*/*")
@@ -100,10 +113,10 @@ class PlatformWebViewFragment : Fragment() {
             }
         }
 
-        session.navigationDelegate = object : GeckoSession.NavigationDelegate() {
+        session.navigationDelegate = object : GeckoSession.NavigationDelegate {
             override fun onLoadRequest(
                 session: GeckoSession,
-                request: NavigationDelegate.LoadRequest
+                request: GeckoSession.NavigationDelegate.LoadRequest
             ): GeckoResult<AllowOrDeny>? {
                 val url = request.uri.toString()
                 if (isExternalLink(url)) {
@@ -118,7 +131,7 @@ class PlatformWebViewFragment : Fragment() {
             }
         }
 
-        session.progressDelegate = object : GeckoSession.ProgressDelegate() {
+        session.progressDelegate = object : GeckoSession.ProgressDelegate {
             override fun onPageStop(session: GeckoSession, success: Boolean) {
                 if (!hasNotifiedLoad) {
                     hasNotifiedLoad = true

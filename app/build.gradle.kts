@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.mimokotlin.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mimokotlin.app"
@@ -52,8 +52,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 }
 
@@ -67,19 +69,23 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
 
-configurations.configureEach {
+configurations.named("standardImplementation") {
     resolutionStrategy {
-        // GeckoView 152 pulls in androidx.core 1.18+ / media3 1.10+ which require compileSdk 36.
-        // Force versions compatible with compileSdk 34 / AGP 8.2.2.
+        // Standard flavor uses system WebView — keep old AndroidX to avoid Kotlin 2.x metadata.
+        force("org.jetbrains.kotlin:kotlin-stdlib:1.9.24")
         force("androidx.core:core:1.13.1")
         force("androidx.core:core-ktx:1.13.1")
-        force("androidx.media3:media3-common:1.2.1")
-        force("androidx.media3:media3-database:1.2.1")
-        force("androidx.media3:media3-datasource:1.2.1")
-        force("androidx.media3:media3-decoder:1.2.1")
-        force("androidx.media3:media3-exoplayer:1.2.1")
-        force("androidx.media3:media3-exoplayer-hls:1.2.1")
-        force("androidx.media3:media3-extractor:1.2.1")
+        force("androidx.annotation:annotation:1.7.1")
+        force("androidx.collection:collection:1.4.0")
+        force("androidx.activity:activity:1.8.2")
+        force("androidx.activity:activity-ktx:1.8.2")
+        force("androidx.fragment:fragment:1.6.2")
+        force("androidx.fragment:fragment-ktx:1.6.2")
+        force("androidx.lifecycle:lifecycle-runtime:2.7.0")
+        force("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+        force("androidx.lifecycle:lifecycle-viewmodel:2.7.0")
+        force("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+        force("androidx.lifecycle:lifecycle-common:2.7.0")
     }
 }
 

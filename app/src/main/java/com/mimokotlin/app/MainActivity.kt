@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupViewPager() {
         viewPager.adapter = TabAdapter(this, config.tabs)
-        viewPager.offscreenPageLimit = config.tabs.size - 1
+        viewPager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
         viewPager.isUserInputEnabled = false
 
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {

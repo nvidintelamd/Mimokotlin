@@ -1,0 +1,14 @@
+{
+  "manifest_version": 2,
+  "name": "Hide Buttons & Auto Login",
+  "version": "1.1",
+  "description": "Hide floating buttons and auto-click login on MIMO pages",
+  "content_scripts": [
+    {
+      "matches": ["*://*.xiaomimimo.com/*", "*://*.mi.com/*", "*://*.xiaomi.com/*"],
+      "css": ["hide.css"],
+      "js": ["auto_login.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
