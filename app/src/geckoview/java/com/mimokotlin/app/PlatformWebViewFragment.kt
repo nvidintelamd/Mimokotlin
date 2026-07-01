@@ -189,12 +189,10 @@ class PlatformWebViewFragment : Fragment() {
                 }
             }
             .setNegativeButton("取消") { _, _ ->
-                filePrompt?.dismiss()
-                // Must complete the GeckoResult even on dismiss, otherwise GeckoView
-                // thinks the prompt is still pending and blocks future file prompts
-                fileResult?.complete(null)
-                fileResult = null
+                // Signal to GeckoView that the prompt was cancelled
+                fileResult?.completeExceptionally(Exception("User cancelled"))
                 filePrompt = null
+                fileResult = null
             }
             .show()
     }
