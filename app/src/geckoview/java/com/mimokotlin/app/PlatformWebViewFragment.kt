@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.GeckoResult
@@ -23,7 +24,11 @@ import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
 import org.mozilla.geckoview.WebExtension
+import java.io.File
+import java.io.FileOutputStream
 import java.net.URI
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 class PlatformWebViewFragment : Fragment() {
 
@@ -31,13 +36,11 @@ class PlatformWebViewFragment : Fragment() {
         private const val ARG_URL = "url"
 
         private var geckoRuntime: GeckoRuntime? = null
-
         private var hideButtonsExtension: WebExtension? = null
 
         fun getGeckoRuntime(context: Context): GeckoRuntime {
             return geckoRuntime ?: GeckoRuntime.create(context.applicationContext).also {
                 geckoRuntime = it
-                // Install hide-buttons extension at runtime level (before any session opens)
                 it.webExtensionController.ensureBuiltIn(
                     "resource://android/assets/extensions/hide_buttons/",
                     "hide_buttons@mimokotlin.app"
@@ -62,18 +65,38 @@ class PlatformWebViewFragment : Fragment() {
     private var canGoBackState = false
     private val handler = Handler(Looper.getMainLooper())
 
-    private var fileUploadPrompt: GeckoSession.PromptDelegate.FilePrompt? = null
+    // File upload state — keep GeckoResult alive until user selects files
+    private var filePrompt: GeckoSession.PromptDelegate.FilePrompt? = null
+    private var fileResult: GeckoResult<GeckoSession.PromptDelegate.PromptResponse>? = null
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
     ) { uris ->
-        val prompt = fileUploadPrompt ?: return@registerForActivityResult
+        val prompt = filePrompt ?: return@registerForActivityResult
+        val result = fileResult ?: return@registerForActivityResult
         if (uris.isNotEmpty()) {
-            prompt.confirm(requireContext(), uris.toTypedArray())
+            val ctx = requireContext()
+            val response = prompt.confirm(ctx, uris.toTypedArray())
+            result.complete(response)
         } else {
             prompt.dismiss()
         }
-        fileUploadPrompt = null
+        filePrompt = null
+        fileResult = null
+    }
+
+    private val folderPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri ->
+        val prompt = filePrompt ?: return@registerForActivityResult
+        val result = fileResult ?: return@registerForActivityResult
+        if (treeUri != null) {
+            compressAndConfirm(prompt, result, treeUri)
+        } else {
+            prompt.dismiss()
+            filePrompt = null
+            fileResult = null
+        }
     }
 
     override fun onCreateView(
@@ -104,12 +127,12 @@ class PlatformWebViewFragment : Fragment() {
             override fun onFilePrompt(
                 session: GeckoSession,
                 prompt: GeckoSession.PromptDelegate.FilePrompt
-            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse>? {
-                fileUploadPrompt = prompt
-                handler.post {
-                    fileChooserLauncher.launch("*/*")
-                }
-                return null
+            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse> {
+                val result = GeckoResult<GeckoSession.PromptDelegate.PromptResponse>()
+                filePrompt = prompt
+                fileResult = result
+                handler.post { showUploadOptions() }
+                return result
             }
         }
 
@@ -154,6 +177,71 @@ class PlatformWebViewFragment : Fragment() {
 
     private val internalDomains = listOf("xiaomimimo.com", "mi.com", "xiaomi.com")
 
+    private fun showUploadOptions() {
+        val ctx = context ?: return
+        val options = arrayOf("选择文件", "压缩文件夹为DOCX上传")
+        AlertDialog.Builder(ctx)
+            .setTitle("上传方式")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> fileChooserLauncher.launch("*/*")
+                    1 -> folderPickerLauncher.launch(null)
+                }
+            }
+            .setNegativeButton("取消") { _, _ ->
+                filePrompt?.dismiss()
+                filePrompt = null
+                fileResult = null
+            }
+            .show()
+    }
+
+    private fun compressAndConfirm(
+        prompt: GeckoSession.PromptDelegate.FilePrompt,
+        result: GeckoResult<GeckoSession.PromptDelegate.PromptResponse>,
+        treeUri: Uri
+    ) {
+        val ctx = context ?: return
+        Thread {
+            try {
+                val docFile = DocumentFile.fromTreeUri(ctx, treeUri) ?: throw Exception("无法访问文件夹")
+                val folderName = docFile.name ?: "archive"
+                val uploadDir = File(ctx.externalCacheDir, "uploads").apply { mkdirs() }
+                val outFile = File(uploadDir, "$folderName.docx")
+                ZipOutputStream(FileOutputStream(outFile)).use { zipFolder(docFile, it, "") }
+                val fileUri = Uri.fromFile(outFile)
+                handler.post {
+                    val response = prompt.confirm(ctx, arrayOf(fileUri))
+                    result.complete(response)
+                    filePrompt = null
+                    fileResult = null
+                    Toast.makeText(ctx, "已压缩为: ${outFile.name}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                handler.post {
+                    Toast.makeText(ctx, "压缩失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    prompt.dismiss()
+                    filePrompt = null
+                    fileResult = null
+                }
+            }
+        }.start()
+    }
+
+    private fun zipFolder(folder: DocumentFile, zos: ZipOutputStream, path: String) {
+        for (file in folder.listFiles()) {
+            val fileName = file.name ?: continue
+            val entryPath = if (path.isEmpty()) fileName else "$path/$fileName"
+            if (file.isDirectory) {
+                zipFolder(file, zos, entryPath)
+            } else {
+                zos.putNextEntry(ZipEntry(entryPath))
+                context?.contentResolver?.openInputStream(file.uri)?.use { it.copyTo(zos) }
+                zos.closeEntry()
+            }
+        }
+    }
+
     private fun isExternalLink(url: String): Boolean {
         if (baseUrl.isEmpty()) return false
         return try {
@@ -168,18 +256,14 @@ class PlatformWebViewFragment : Fragment() {
         val ctx = context ?: return
         val dialogView = LayoutInflater.from(ctx).inflate(R.layout.dialog_external_link, null)
         dialogView.findViewById<TextView>(R.id.dialogUrl).text = url
-
         val countdownView = dialogView.findViewById<TextView>(R.id.dialogCountdown)
-
         val dialog = AlertDialog.Builder(ctx)
             .setView(dialogView)
             .setPositiveButton("打开") { _, _ -> openInBrowser(url) }
             .setNegativeButton("取消", null)
             .create()
-
         var remaining = 10
         countdownView.text = "${remaining}s 后自动关闭"
-
         val countdownRunnable = object : Runnable {
             override fun run() {
                 remaining--
@@ -191,11 +275,7 @@ class PlatformWebViewFragment : Fragment() {
                 }
             }
         }
-
-        dialog.setOnDismissListener {
-            handler.removeCallbacks(countdownRunnable)
-        }
-
+        dialog.setOnDismissListener { handler.removeCallbacks(countdownRunnable) }
         dialog.show()
         handler.postDelayed(countdownRunnable, 1000)
     }
